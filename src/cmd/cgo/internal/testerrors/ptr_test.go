@@ -489,6 +489,25 @@ var ptrTests = []ptrTest{
 		body:    `i := 0; a := &[2]unsafe.Pointer{nil, unsafe.Pointer(&i)}; C.f45(&a[0])`,
 		fail:    true,
 	},
+	{
+		// Passing a Go map as argument to C.
+		name:    "argmap",
+		c:       `void f46(void* p) {}`,
+		imports: []string{"unsafe"},
+		body:    `m := map[int]int{0: 1,}; C.f46(unsafe.Pointer(&m))`,
+		fail:    true,
+	},
+	{
+		// Returning a Go map to C.
+		name:    "retmap",
+		c:       `extern void f47();`,
+		support: `//export GoMap47
+		          func GoMap47() map[int]int { return map[int]int{0: 1,} }`,
+		body: `C.f47()`,
+		c1: `extern void* GoMap47();
+		     void f47() { GoMap47(); }`,
+		fail: true,
+	},
 }
 
 func TestPointerChecks(t *testing.T) {
@@ -693,7 +712,7 @@ func testOne(t *testing.T, pt ptrTest, exe, exe2 string) {
 		if err == nil {
 			t.Logf("%s", buf)
 			t.Fatalf("did not fail as expected")
-		} else if !bytes.Contains(buf, []byte("Go pointer")) {
+		} else if !bytes.Contains(buf, []byte("unpinned Go")) {
 			t.Logf("%s", buf)
 			t.Fatalf("did not print expected error (failed with %v)", err)
 		}
