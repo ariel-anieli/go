@@ -519,7 +519,6 @@ func TestPointerChecks(t *testing.T) {
 	// after testOne finishes.
 	var pending int32
 	for _, pt := range ptrTests {
-		pt := pt
 		t.Run(pt.name, func(t *testing.T) {
 			atomic.AddInt32(&pending, +1)
 			defer func() {
