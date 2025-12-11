@@ -310,14 +310,20 @@ func callbackUpdateSystemStack(mp *m, sp uintptr, signal bool) {
 // Call from C back to Go. fn must point to an ABIInternal Go entry-point.
 //
 //go:nosplit
-func cgocallbackg(fn, frame unsafe.Pointer, ctxt uintptr) {
+func cgocallbackg() {
 	gp := getg()
 	if gp != gp.m.curg {
 		println("runtime: bad g in cgocallback")
 		exit(2)
 	}
 
-	sp := gp.m.g0.sched.sp // system sp saved by cgocallback.
+	// Get arguments from the stack pointer of the caller
+	sp := sys.GetCallerSP()
+	fn := *(*unsafe.Pointer)(unsafe.Pointer(sp))
+	frame := *(*unsafe.Pointer)(unsafe.Pointer(sp + goarch.PtrSize))
+	ctxt := *(*uintptr)(unsafe.Pointer(sp + 2*goarch.PtrSize))
+
+	sp = gp.m.g0.sched.sp // system sp saved by cgocallback.
 	oldStack := gp.m.g0.stack
 	oldAccurate := gp.m.g0StackAccurate
 	callbackUpdateSystemStack(gp.m, sp, false)
