@@ -806,7 +806,7 @@ havem:
 	MOVL	AX, 0(SP)
 	MOVL	BX, 4(SP)
 	MOVL	CX, 8(SP)
-	CALL	runtime·cgocallbackg(SB)
+	CALL	runtime·cgocallbackg<ABIInternal>(SB)
 
 	// Restore g->sched (== m->curg->sched) from saved values.
 	get_tls(CX)

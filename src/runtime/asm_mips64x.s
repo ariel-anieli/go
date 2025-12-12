@@ -571,7 +571,7 @@ havem:
 	MOVV	R5, 8(R29)
 	MOVV	R6, 16(R29)
 	MOVV	R7, 24(R29)
-	JAL	runtime·cgocallbackg(SB)
+	JAL	runtime·cgocallbackg<ABIInternal>(SB)
 
 	// Restore g->sched (== m->curg->sched) from saved values.
 	MOVV	0(R29), R4

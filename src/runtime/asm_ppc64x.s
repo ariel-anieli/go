@@ -897,15 +897,12 @@ havem:
 	MOVD	(g_sched+gobuf_pc)(g), R5
 	MOVD	R5, -(24+FIXED_FRAME)(R4)       // "saved LR"; must match frame size
 	// Gather our arguments into registers.
-	MOVD	fn+0(FP), R5
-	MOVD	frame+8(FP), R6
-	MOVD	ctxt+16(FP), R7
+	MOVD	fn+0(FP), R3
+	MOVD	frame+8(FP), R4
+	MOVD	ctxt+16(FP), R5
 	MOVD	$-(24+FIXED_FRAME)(R4), R1      // switch stack; must match frame size
-	MOVD    R5, FIXED_FRAME+0(R1)
-	MOVD    R6, FIXED_FRAME+8(R1)
-	MOVD    R7, FIXED_FRAME+16(R1)
 
-	MOVD	$runtime·cgocallbackg(SB), R12
+	MOVD	$runtime·cgocallbackg<ABIInternal>(SB), R12
 	MOVD	R12, CTR
 	CALL	(CTR) // indirect call to bypass nosplit check. We're on a different stack now.
 

@@ -739,7 +739,7 @@ havem:
 	MOVW	R1, 4(R13)
 	MOVW	R2, 8(R13)
 	MOVW	R3, 12(R13)
-	BL	runtime·cgocallbackg(SB)
+	BL	runtime·cgocallbackg<ABIInternal>(SB)
 
 	// Restore g->sched (== m->curg->sched) from saved values.
 	MOVW	0(R13), R5
