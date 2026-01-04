@@ -667,21 +667,34 @@ havem:
 	BL	runtime·save_g(SB)
 	MOVD	(g_sched+gobuf_sp)(g), R4 // prepare stack as R4
 	MOVD	(g_sched+gobuf_pc)(g), R5
-	MOVD	R5, -(24+8)(R4)	// "saved LR"; must match frame size
+
 	// Gather our arguments into registers.
-	MOVD	fn+0(FP), R1
-	MOVD	frame+8(FP), R2
-	MOVD	ctxt+16(FP), R3
-	MOVD	$-(24+8)(R4), R15	// switch stack; must match frame size
-	MOVD	R1, 8(R15)
-	MOVD	R2, 16(R15)
-	MOVD	R3, 24(R15)
-	BL	runtime·cgocallbackg(SB)
+	MOVD	fn+0(FP), R2
+	MOVD	frame+8(FP), R3
+	MOVD	ctxt+16(FP), R4
+
+	// Compute the size of the frame, including return PC.
+	MOVD	$8, R0
+	ADD	R15, R0, R1	// R1 points to first argument
+	SUB	R15, R1, R1	// R1 is our actual frame size
+	SUB	R1, R4		// Allocate the same frame size on the g stack
+	MOVD	R4, R15		// switch stack
+
+	MOVD	R5, 0(R15)	// "saved LR"
+	MOVD	R2, 8(R15)
+	MOVD	R3, 16(R15)
+	MOVD	R4, 24(R15)
+	MOVD	$runtime·cgocallbackg<ABIInternal>(SB), R1
+	BL	(R1)
 
 	// Restore g->sched (== m->curg->sched) from saved values.
 	MOVD	0(R15), R5
 	MOVD	R5, (g_sched+gobuf_pc)(g)
-	MOVD	$(24+8)(R15), R4	// must match frame size
+	MOVD	$8, R0
+	ADD	R15, R0, R1
+	SUB	R15, R1, R1
+	MOVD	R15, R4
+	ADD	R1, R4, R4
 	MOVD	R4, (g_sched+gobuf_sp)(g)
 
 	// Switch back to m->g0's stack and restore m->g0->sched.sp.

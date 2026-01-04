@@ -798,22 +798,30 @@ havem:
 	MOVL	(g_sched+gobuf_sp)(SI), DI // prepare stack as DI
 	MOVL	(g_sched+gobuf_pc)(SI), BP
 	MOVL	BP, -4(DI)  // "push" return PC on the g stack
+
 	// Gather our arguments into registers.
 	MOVL	fn+0(FP), AX
 	MOVL	frame+4(FP), BX
 	MOVL	ctxt+8(FP), CX
-	LEAL	-(4+12)(DI), SP  // Must match declared frame size
-	MOVL	AX, 0(SP)
-	MOVL	BX, 4(SP)
-	MOVL	CX, 8(SP)
-	CALL	runtime·cgocallbackg(SB)
+
+	// Compute the size of the frame, including return PC.
+	LEAL    fn+0(FP), DX
+	SUBL    SP, DX   // DX is our actual frame size
+	SUBL    DX, DI   // Allocate the same frame size on the g stack
+	MOVL    DI, SP
+
+	MOVL	BP, 0(SP)	// "saved BP" (which was curg PC)
+	MOVL	AX, 4(SP)
+	MOVL	BX, 8(SP)
+	MOVL	CX, 12(SP)
+	MOVL	$runtime·cgocallbackg<ABIInternal>(SB), DX
+	CALL	DX	// indirect call to bypass nosplit check. We're on a different stack now.
 
 	// Restore g->sched (== m->curg->sched) from saved values.
-	get_tls(CX)
-	MOVL	g(CX), SI
-	MOVL	12(SP), BP  // Must match declared frame size
+	MOVL	0(SP), BP
 	MOVL	BP, (g_sched+gobuf_pc)(SI)
-	LEAL	(12+4)(SP), DI  // Must match declared frame size
+	LEAL	12(SP), DI // DI is the SP we want to restore to (old DI)
+	ADDL    DX, DI     // DX is frame size
 	MOVL	DI, (g_sched+gobuf_sp)(SI)
 
 	// Switch back to m->g0's stack and restore m->g0->sched.sp.

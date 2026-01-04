@@ -552,21 +552,32 @@ havem:
 	JAL	runtime·save_g(SB)
 	MOVW	(g_sched+gobuf_sp)(g), R2 // prepare stack as R2
 	MOVW	(g_sched+gobuf_pc)(g), R4
-	MOVW	R4, -(12+4)(R2)	// "saved LR"; must match frame size
+
 	// Gather our arguments into registers.
 	MOVW	fn+0(FP), R5
 	MOVW	frame+4(FP), R6
 	MOVW	ctxt+8(FP), R7
-	MOVW	$-(12+4)(R2), R29	// switch stack; must match frame size
+
+	// Compute the size of the frame, including return PC.
+	ADDU	$4, R29, R1
+	SUBU	R29, R1, R1	// R1 is our actual frame size
+	SUBU	R1, R2		// Allocate the same frame size on the g stack
+	MOVW	R2, R29		// switch stack
+
+	MOVW	R4, 0(R29)	// "saved LR"
 	MOVW	R5, 4(R29)
 	MOVW	R6, 8(R29)
 	MOVW	R7, 12(R29)
-	JAL	runtime·cgocallbackg(SB)
+	MOVW	$runtime·cgocallbackg<ABIInternal>(SB), R4
+	JAL	(R4)
 
 	// Restore g->sched (== m->curg->sched) from saved values.
 	MOVW	0(R29), R4
 	MOVW	R4, (g_sched+gobuf_pc)(g)
-	MOVW	$(12+4)(R29), R2	// must match frame size
+	ADDU	$4, R29, R1
+	SUBU	R29, R1, R1
+	MOVW	R29, R2
+	ADDU	R1, R2, R2
 	MOVW	R2, (g_sched+gobuf_sp)(g)
 
 	// Switch back to m->g0's stack and restore m->g0->sched.sp.
